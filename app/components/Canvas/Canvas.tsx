@@ -1,11 +1,22 @@
 "use client";
 
-import { useDroppable } from "@dnd-kit/core";
+import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { useReport } from "../../context/ReportContext";
 import { ReportElement } from "../../context/ReportContext";
 
+interface CanvasProps {
+  isDragging: boolean;
+}
+
 function ReportElementComponent({ element }: { element: ReportElement }) {
-  const { dispatch } = useReport();
+  const { state, dispatch } = useReport();
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: element.id,
+    data: element,
+  });
+
+  const isSelected = state.selectedElementId === element.id;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -18,19 +29,26 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
     }
   };
 
+  const style = {
+    position: "absolute" as const,
+    left: element.x,
+    top: element.y,
+    width: element.width,
+    height: element.height,
+    transform: transform ? CSS.Translate.toString(transform) : undefined,
+  };
+
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       onClick={handleClick}
       onKeyDown={handleDelete}
-      tabIndex={0}
-      style={{
-        position: "absolute",
-        left: element.x,
-        top: element.y,
-        width: element.width,
-        height: element.height,
-      }}
-      className="border-2 border-transparent hover:border-blue-500 focus:border-blue-500 focus:outline-none"
+      {...listeners}
+      {...attributes}
+      className={`border-2 ${
+        isSelected ? "border-blue-500" : "border-transparent"
+      } hover:border-blue-500 focus:border-blue-500 focus:outline-none cursor-move`}
     >
       {element.type === "TextBox" && (
         <div className="w-full h-full p-2 bg-white border border-black text-black">
@@ -58,7 +76,7 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
         </div>
       )}
       {element.type === "Container" && (
-        <div className="w-full h-full p-2 bg-gray-50 border border-dashed border-gray-300">
+        <div className="w-full h-full p-2 bg-gray-50 border border-dashed border-black">
           Container
         </div>
       )}
@@ -66,14 +84,16 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
   );
 }
 
-export function Canvas() {
+export function Canvas({ isDragging }: CanvasProps) {
   const { state, dispatch } = useReport();
   const { setNodeRef } = useDroppable({
     id: "canvas",
   });
 
   const handleCanvasClick = () => {
-    dispatch({ type: "SELECT_ELEMENT", payload: null });
+    if (!isDragging) {
+      dispatch({ type: "SELECT_ELEMENT", payload: null });
+    }
   };
 
   return (
