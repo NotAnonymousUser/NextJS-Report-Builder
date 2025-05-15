@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
+import { DataSource } from "../lib/data-sources";
 
 export interface ReportElement {
   id: string;
@@ -9,7 +10,13 @@ export interface ReportElement {
   y: number;
   width: number;
   height: number;
-  props: Record<string, any>;
+  props: {
+    text?: string;
+    fontSize?: number;
+    color?: string;
+    dataSourceId?: string;
+    columns?: string[];
+  };
 }
 
 interface ReportState {
@@ -26,7 +33,7 @@ type ReportAction =
     }
   | { type: "DELETE_ELEMENT"; payload: string }
   | { type: "SELECT_ELEMENT"; payload: string | null }
-  | { type: "TOGGLE_GRID" };
+  | { type: "TOGGLE_GRID"; payload: boolean };
 
 const initialState: ReportState = {
   elements: [],
@@ -67,7 +74,7 @@ function reportReducer(state: ReportState, action: ReportAction): ReportState {
     case "TOGGLE_GRID":
       return {
         ...state,
-        showGrid: !state.showGrid,
+        showGrid: action.payload,
       };
     default:
       return state;

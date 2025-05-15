@@ -4,9 +4,94 @@ import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useReport } from "../../context/ReportContext";
 import { ReportElement } from "../../context/ReportContext";
+import { useEffect, useRef, useState } from "react";
+import { dataSources } from "../../lib/data-sources";
 
 interface CanvasProps {
   isDragging: boolean;
+}
+
+function TableComponent({ element }: { element: ReportElement }) {
+  const dataSource = dataSources.find(
+    (ds) => ds.id === element.props.dataSourceId
+  );
+
+  if (!dataSource) {
+    return (
+      <div className="w-full h-full p-2 bg-white border border-black text-black">
+        Select a data source in properties
+      </div>
+    );
+  }
+
+  const columns =
+    element.props.columns || dataSource.columns.map((col) => col.id);
+  const visibleColumns = dataSource.columns.filter((col) =>
+    columns.includes(col.id)
+  );
+
+  return (
+    <div className="w-full h-full overflow-auto">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            {visibleColumns.map((column) => (
+              <th
+                key={column.id}
+                className="border border-gray-300 bg-gray-100 p-2 text-left"
+              >
+                {column.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {dataSource.data.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {visibleColumns.map((column) => (
+                <td key={column.id} className="border border-gray-300 p-2">
+                  {row[column.id]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ResizeHandle({
+  onResize,
+}: {
+  onResize: (dx: number, dy: number) => void;
+}) {
+  return (
+    <div
+      className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startY = e.clientY;
+
+        const handleMouseMove = (e: MouseEvent) => {
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          onResize(dx, dy);
+        };
+
+        const handleMouseUp = () => {
+          document.removeEventListener("mousemove", handleMouseMove);
+          document.removeEventListener("mouseup", handleMouseUp);
+        };
+
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+      }}
+    >
+      <div className="w-full h-full border-b-2 border-r-2 border-gray-400" />
+    </div>
+  );
 }
 
 function ReportElementComponent({ element }: { element: ReportElement }) {
@@ -23,10 +108,17 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
     dispatch({ type: "SELECT_ELEMENT", payload: element.id });
   };
 
-  const handleDelete = (e: React.KeyboardEvent) => {
-    if (e.key === "Delete" || e.key === "Backspace") {
-      dispatch({ type: "DELETE_ELEMENT", payload: element.id });
-    }
+  const handleResize = (dx: number, dy: number) => {
+    dispatch({
+      type: "UPDATE_ELEMENT",
+      payload: {
+        id: element.id,
+        updates: {
+          width: Math.max(100, element.width + dx),
+          height: Math.max(100, element.height + dy),
+        },
+      },
+    });
   };
 
   const style = {
@@ -43,7 +135,6 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
       ref={setNodeRef}
       style={style}
       onClick={handleClick}
-      onKeyDown={handleDelete}
       {...listeners}
       {...attributes}
       className={`border-2 ${
@@ -57,7 +148,7 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
       )}
       {element.type === "Table" && (
         <div className="w-full h-full p-2 bg-white border border-black text-black">
-          Table Placeholder
+          <TableComponent element={element} />
         </div>
       )}
       {element.type === "Chart" && (
@@ -80,6 +171,7 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
           Container
         </div>
       )}
+      {isSelected && <ResizeHandle onResize={handleResize} />}
     </div>
   );
 }
@@ -95,6 +187,18 @@ export function Canvas({ isDragging }: CanvasProps) {
       dispatch({ type: "SELECT_ELEMENT", payload: null });
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (state.selectedElementId && e.key === "Delete") {
+        e.preventDefault();
+        dispatch({ type: "DELETE_ELEMENT", payload: state.selectedElementId });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [state.selectedElementId, dispatch]);
 
   return (
     <div
