@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js Report Designer
+
+A modular, drag-and-drop report designer built with Next.js 15, TypeScript, and modern web technologies.
+
+## Features
+
+- 🎨 Three-pane layout with toolbox, canvas, and properties panel
+- 🖱️ Drag-and-drop interface for adding and positioning elements
+- 📏 Grid-based canvas with absolute positioning
+- 🎯 Element selection and property editing
+- 🎨 Basic styling controls for elements
+- 📱 Responsive design
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+   ```bash
+   git clone https://github.com/yourusername/nextjs-report-builder.git
+   cd nextjs-report-builder
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Run the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Project Structure
+
+```
+/app
+  /components
+    /Toolbox         # Draggable stencils
+    /Canvas          # Drop zone and element rendering
+    /PropertiesPanel # Element property editing
+  /context          # Report state management
+  /designer         # Main designer page
+  /hooks           # Custom React hooks
+  /lib             # Utility functions and API stubs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Next Steps
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. Data Source Integration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Implement data source connectors in `/lib/data-sources/`
+- Add data binding UI in the properties panel
+- Create data preview components
 
-## Learn More
+### 2. Persistence Layer
 
-To learn more about Next.js, take a look at the following resources:
+- Add backend API routes for saving/loading reports
+- Implement report versioning
+- Add export functionality (PDF, Excel, etc.)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. Authentication & Authorization
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Add user authentication
+- Implement role-based access control
+- Add report sharing and collaboration features
 
-## Deploy on Vercel
+### 4. Advanced Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Add more element types (Charts, Tables with data)
+- Implement undo/redo functionality
+- Add element grouping and alignment tools
+- Implement responsive design controls
+- Add report templates and themes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Technologies Used
+
+- Next.js 15
+- TypeScript
+- Tailwind CSS
+- @dnd-kit/core for drag-and-drop
+- React Hook Form for form handling
+- Lucide React for icons
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
