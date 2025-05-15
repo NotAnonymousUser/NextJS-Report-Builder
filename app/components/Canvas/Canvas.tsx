@@ -4,7 +4,7 @@ import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useReport } from "../../context/ReportContext";
 import { ReportElement } from "../../context/ReportContext";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { dataSources } from "../../lib/data-sources";
 
 interface CanvasProps {
@@ -63,30 +63,44 @@ function TableComponent({ element }: { element: ReportElement }) {
 
 function ResizeHandle({
   onResize,
+  onResizeEnd,
 }: {
   onResize: (dx: number, dy: number) => void;
+  onResizeEnd: () => void;
 }) {
   return (
     <div
-      className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
+      className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize z-50"
       onMouseDown={(e) => {
         e.stopPropagation();
+        e.preventDefault();
         const startX = e.clientX;
         const startY = e.clientY;
+        const element = e.currentTarget.parentElement;
+        if (!element) return;
 
         const handleMouseMove = (e: MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
           const dx = e.clientX - startX;
           const dy = e.clientY - startY;
           onResize(dx, dy);
         };
 
-        const handleMouseUp = () => {
+        const handleMouseUp = (e: MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
           document.removeEventListener("mousemove", handleMouseMove);
           document.removeEventListener("mouseup", handleMouseUp);
+          onResizeEnd();
         };
 
         document.addEventListener("mousemove", handleMouseMove);
         document.addEventListener("mouseup", handleMouseUp);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
       }}
     >
       <div className="w-full h-full border-b-2 border-r-2 border-gray-400" />
@@ -96,19 +110,26 @@ function ResizeHandle({
 
 function ReportElementComponent({ element }: { element: ReportElement }) {
   const { state, dispatch } = useReport();
+  const [isResizing, setIsResizing] = useState(false);
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: element.id,
     data: element,
+    disabled: isResizing,
   });
 
   const isSelected = state.selectedElementId === element.id;
 
   const handleClick = (e: React.MouseEvent) => {
+    if (isResizing) {
+      e.stopPropagation();
+      return;
+    }
     e.stopPropagation();
     dispatch({ type: "SELECT_ELEMENT", payload: element.id });
   };
 
   const handleResize = (dx: number, dy: number) => {
+    setIsResizing(true);
     dispatch({
       type: "UPDATE_ELEMENT",
       payload: {
@@ -121,6 +142,10 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
     });
   };
 
+  const handleResizeEnd = () => {
+    setIsResizing(false);
+  };
+
   const style = {
     position: "absolute" as const,
     left: element.x,
@@ -128,6 +153,7 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
     width: element.width,
     height: element.height,
     transform: transform ? CSS.Translate.toString(transform) : undefined,
+    touchAction: "none" as const,
   };
 
   return (
@@ -135,29 +161,30 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
       ref={setNodeRef}
       style={style}
       onClick={handleClick}
-      {...listeners}
-      {...attributes}
+      {...(!isResizing ? { ...listeners, ...attributes } : {})}
       className={`border-2 ${
         isSelected ? "border-blue-500" : "border-transparent"
-      } hover:border-blue-500 focus:border-blue-500 focus:outline-none cursor-move`}
+      } hover:border-blue-500 focus:border-blue-500 focus:outline-none ${
+        !isResizing ? "cursor-move" : "cursor-default"
+      }`}
     >
       {element.type === "TextBox" && (
-        <div className="w-full h-full p-2 bg-white border border-black text-black">
+        <div className="w-full h-full p-2 bg-white border  text-black">
           {element.props.text || "Text Box"}
         </div>
       )}
       {element.type === "Table" && (
-        <div className="w-full h-full p-2 bg-white border border-black text-black">
+        <div className="w-full h-full p-2 bg-white border  text-black">
           <TableComponent element={element} />
         </div>
       )}
       {element.type === "Chart" && (
-        <div className="w-full h-full p-2 bg-white border border-black text-black">
+        <div className="w-full h-full p-2 bg-white border  text-black">
           Chart Placeholder
         </div>
       )}
       {element.type === "Image" && (
-        <div className="w-full h-full p-2 bg-white border flex items-center justify-center border-black text-black">
+        <div className="w-full h-full p-2 bg-white border flex items-center justify-center text-black">
           Image Placeholder
         </div>
       )}
@@ -167,11 +194,13 @@ function ReportElementComponent({ element }: { element: ReportElement }) {
         </div>
       )}
       {element.type === "Container" && (
-        <div className="w-full h-full p-2 bg-gray-50 border border-dashed border-black">
+        <div className="w-full h-full p-2 bg-gray-50 border border-dashed">
           Container
         </div>
       )}
-      {isSelected && <ResizeHandle onResize={handleResize} />}
+      {isSelected && (
+        <ResizeHandle onResize={handleResize} onResizeEnd={handleResizeEnd} />
+      )}
     </div>
   );
 }
